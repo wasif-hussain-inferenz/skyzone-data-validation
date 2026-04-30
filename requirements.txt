@@ -1,0 +1,16 @@
+# Data processing
+pandas>=2.0.0
+openpyxl>=3.1.0
+
+# Web automation
+selenium>=4.0.0
+webdriver-manager>=4.0.0
+
+# Snowflake
+snowflake-connector-python[secure-local-storage]>=3.0.0
+
+# SQLAlchemy (required by pandas for Snowflake)
+sqlalchemy>=2.0.0
+
+# Cryptography (for key-based authentication)
+cryptography>=41.0.0
