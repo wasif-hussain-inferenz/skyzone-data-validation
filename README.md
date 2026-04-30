@@ -21,6 +21,8 @@ The pipeline downloads the `Revenue By Park By Day` report from Roller, loads th
 ```text
 SkyZone_Automation_Wasif/
 |-- main.py                         # Full pipeline entry point
+|-- sz_rev_valid_full.py            # Optional single-file temp-workspace runner
+|-- README_FULL.md                  # Instructions for sz_rev_valid_full.py
 |-- requirements.txt                # Python package requirements
 |-- rsa_key.p8                      # Snowflake private key, local secret
 |-- config/
