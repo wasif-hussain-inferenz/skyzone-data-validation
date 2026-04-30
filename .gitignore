@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+
+# Local secrets
+rsa_key.p8
+*.pem
+*.key
+
+# Generated automation files
+data/downloads/*
+data/output/*
+config/downloads/*
+
+# Keep folder structure when generated files are ignored
+!data/downloads/.gitkeep
+!data/output/.gitkeep
+!data/input/.gitkeep
+!config/downloads/.gitkeep
+
+# Excel temporary lock files
+~$*.xlsx
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

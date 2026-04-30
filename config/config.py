@@ -11,7 +11,7 @@ os.makedirs(INPUT_PATH, exist_ok=True)
 os.makedirs(REPORT_PATH, exist_ok=True)
 
 # ============================================================
-# OPTION 1: Key-based Authentication (when IP is whitelisted)
+# Snowflake Key-based Authentication
 # ============================================================
 SNOWFLAKE_CONFIG = {
     "user": "DEV_SVCCONNECTION",
@@ -22,15 +22,3 @@ SNOWFLAKE_CONFIG = {
     "private_key_path": "rsa_key.p8",
     "private_key_passphrase": "le9beb2mab9",
 }
-
-# ============================================================
-# OPTION 2: External Browser Authentication (Prod)
-# ============================================================
-# SNOWFLAKE_CONFIG = {
-#     "user": "MOHAMMED.HUSSAIN.IO@SKYZONE.COM",
-#     "account": "BL89401-SKYZONE_QA",
-#     "warehouse": "QA_DATASTRATEGY_XSMALL",
-#     "database": "GOLD_DB",
-#     "schema": "DW",
-#     "authenticator": "externalbrowser"
-# }
