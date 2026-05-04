@@ -1,3 +1,5 @@
+import datetime
+
 import pandas as pd
 from src.snowflake_client import get_connection
 
@@ -40,13 +42,22 @@ def get_latest_snowflake_date(conn_params):
             return pd.to_datetime(latest).strftime('%Y-%m-%d')
     return None
 
-def load_snowflake_data(conn_params, check_date, parks_list):
+def load_snowflake_data(conn_params, dates, parks_list):
 
     conn = get_connection(conn_params)
 
     park_string = ",".join([f"'{p}'" for p in parks_list])
 
-    print("Fetching Snowflake data for date:", check_date)
+    if isinstance(dates, (str, datetime.date, pd.Timestamp)):
+        dates = [dates]
+
+    date_series = pd.to_datetime(pd.Series(dates)).dt.date.dropna().unique()
+    if len(date_series) == 0:
+        raise ValueError("No valid Roller dates were provided to load_snowflake_data")
+
+    date_expressions = ", ".join([f"TO_DATE('{d}')" for d in sorted(date_series)])
+
+    print("Fetching Snowflake data for dates:", sorted(date_series))
     print("Total parks passed:", len(parks_list))
 
     query = f"""
@@ -57,9 +68,9 @@ def load_snowflake_data(conn_params, check_date, parks_list):
     FROM FACTREVENUE fr
     JOIN DIMLOCATION dl ON fr.sk_location = dl.sk_location
     WHERE dl.rollername IN ({park_string})
-        AND CAST(fr.recorddate AS DATE) = TO_DATE('{check_date}')
+        AND CAST(fr.recorddate AS DATE) IN ({date_expressions})
     GROUP BY CAST(fr.recorddate AS DATE), dl.rollername
-    ORDER BY dl.rollername
+    ORDER BY CAST(fr.recorddate AS DATE), dl.rollername
     """
 
     df = pd.read_sql(query, conn)
@@ -72,12 +83,12 @@ def load_snowflake_data(conn_params, check_date, parks_list):
     if not df.empty:
         df["DATE"] = pd.to_datetime(df["DATE"]).dt.date
         df["VENUE"] = (
-    df["VENUE"]
-    .astype(str)
-    .str.upper()
-    .str.strip()
-    .str.replace(r"\s+", " ", regex=True)
-)
+            df["VENUE"]
+            .astype(str)
+            .str.upper()
+            .str.strip()
+            .str.replace(r"\s+", " ", regex=True)
+        )
     else:
         print("⚠️ WARNING: No data returned from Snowflake")
 

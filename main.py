@@ -32,26 +32,23 @@ for attempt in range(5):
         print(f"File access denied, retrying ({attempt + 1}/5)...")
         time.sleep(2)
 
-roller_date = pd.to_datetime(check_date).strftime("%Y-%m-%d")
+roller_min_date = roller_df["DATE"].min()
+roller_max_date = roller_df["DATE"].max()
+print(f"Detected Roller date range: {roller_min_date} through {roller_max_date}")
 
 # Get the latest available date in Snowflake
 print("Getting latest Snowflake date...")
 latest_snowflake_date = get_latest_snowflake_date(conn_params)
 print(f"Latest Snowflake date: {latest_snowflake_date}")
 
-# Use the earlier of Roller date or Snowflake date (Snowflake data may be stale)
-if latest_snowflake_date and roller_date > latest_snowflake_date:
-    print(f"WARNING: Roller date ({roller_date}) is newer than Snowflake data ({latest_snowflake_date})")
-    print(f"Using Snowflake date: {latest_snowflake_date}")
-    check_date = latest_snowflake_date
-else:
-    print(f"Using Roller date: {roller_date}")
-    check_date = roller_date
+if latest_snowflake_date and pd.to_datetime(roller_max_date).strftime("%Y-%m-%d") > latest_snowflake_date:
+    print(f"WARNING: Roller latest date ({roller_max_date}) is newer than Snowflake data ({latest_snowflake_date})")
+    print("Snowflake may not contain the latest Roller dates.")
 
-print("Fetching Snowflake revenue...")
+print(f"Fetching Snowflake revenue for Roller dates {roller_min_date} through {roller_max_date}...")
 snowflake_df = load_snowflake_data(
     conn_params,
-    check_date,
+    roller_df["DATE"].unique(),
     parks_list,
 )
 
