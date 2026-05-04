@@ -60,7 +60,7 @@ Important settings:
 
 - `ROLLER_DOWNLOAD_PATH`: where Roller files are downloaded.
 - `REPORT_PATH`: where the Excel report is written.
-- `SNOWFLAKE_CONFIG`: Snowflake user, account, warehouse, database, schema, private key path, and private key passphrase.
+- `SNOWFLAKE_CONFIG`: Snowflake user, account, warehouse, role, database, schema, private key path, and private key passphrase.
 
 The private key path is resolved relative to the project root when it is not absolute.
 
@@ -130,3 +130,5 @@ python -m pip install --upgrade -r requirements.txt
 ```
 
 If Snowflake returns no data for the Roller date, `main.py` falls back to the latest Snowflake date when available.
+
+If Snowflake authentication succeeds but table access fails, confirm the configured role is correct. The current production role is `PROD_READER_FR`.

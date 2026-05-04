@@ -30,11 +30,16 @@ def get_connection(conn_params):
         encryption_algorithm=serialization.NoEncryption()
     )
 
-    return snowflake.connector.connect(
-        user=conn_params["user"],
-        account=conn_params["account"],
-        warehouse=conn_params["warehouse"],
-        database=conn_params["database"],
-        schema=conn_params["schema"],
-        private_key=private_key_bytes,
-    )
+    connection_args = {
+        "user": conn_params["user"],
+        "account": conn_params["account"],
+        "warehouse": conn_params["warehouse"],
+        "database": conn_params["database"],
+        "schema": conn_params["schema"],
+        "private_key": private_key_bytes,
+    }
+
+    if conn_params.get("role"):
+        connection_args["role"] = conn_params["role"]
+
+    return snowflake.connector.connect(**connection_args)

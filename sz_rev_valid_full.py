@@ -63,9 +63,10 @@ ROLLER_USERNAME = "dataopsedw2@skyzone.com"
 ROLLER_PASSWORD = "mG5670dFDgPSFF7"
 
 SNOWFLAKE_CONFIG = {
-    "user": "DEV_SVCCONNECTION",
-    "account": "pk81200.west-us-2.azure",
-    "warehouse": "DEV_DATASTRATEGY_XSMALL",
+    "user": "PR_SVCCONNECTION",
+    "account": "ls01637.west-us-2.azure",
+    "warehouse": "PR_DATASTRATEGY_XSMALL",
+    "role": "PROD_READER_FR",
     "database": "GOLD_DB",
     "schema": "DW",
     "private_key_passphrase": "le9beb2mab9",
@@ -110,14 +111,19 @@ def get_connection(conn_params, key_path):
         encryption_algorithm=serialization.NoEncryption(),
     )
 
-    return snowflake.connector.connect(
-        user=conn_params["user"],
-        account=conn_params["account"],
-        warehouse=conn_params["warehouse"],
-        database=conn_params["database"],
-        schema=conn_params["schema"],
-        private_key=private_key_bytes,
-    )
+    connection_args = {
+        "user": conn_params["user"],
+        "account": conn_params["account"],
+        "warehouse": conn_params["warehouse"],
+        "database": conn_params["database"],
+        "schema": conn_params["schema"],
+        "private_key": private_key_bytes,
+    }
+
+    if conn_params.get("role"):
+        connection_args["role"] = conn_params["role"]
+
+    return snowflake.connector.connect(**connection_args)
 
 
 def fetch_active_parks(conn_params, key_path, parks_folder):

@@ -30,7 +30,7 @@ requirements.txt
 rsa_key.p8
 ```
 
-The script has the Roller and Snowflake settings inside the file. If those values change later, update the constants near the top of `sz_rev_valid_full.py`.
+The script has the Roller and Snowflake settings inside the file, including the Snowflake role. If those values change later, update the constants near the top of `sz_rev_valid_full.py`.
 
 ## Prerequisites
 
@@ -137,4 +137,5 @@ If Snowflake key authentication fails, confirm:
 
 - `rsa_key.p8` exists in the project root
 - the private key passphrase in `sz_rev_valid_full.py` is correct
+- the configured Snowflake role is still valid for the service user
 - the Snowflake user still has the matching public key configured

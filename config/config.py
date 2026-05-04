@@ -14,9 +14,10 @@ os.makedirs(REPORT_PATH, exist_ok=True)
 # Snowflake Key-based Authentication
 # ============================================================
 SNOWFLAKE_CONFIG = {
-    "user": "DEV_SVCCONNECTION",
-    "account": "pk81200.west-us-2.azure",
-    "warehouse": "DEV_DATASTRATEGY_XSMALL",
+    "user": "PR_SVCCONNECTION",
+    "account": "ls01637.west-us-2.azure",
+    "warehouse": "PR_DATASTRATEGY_XSMALL",
+    "role": "PROD_READER_FR",
     "database": "GOLD_DB",
     "schema": "DW",
     "private_key_path": "rsa_key.p8",
