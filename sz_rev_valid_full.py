@@ -539,7 +539,7 @@ def normalize_venue(series):
     )
 
 
-def compare_revenue(roller_df, snowflake_df):
+def compare_revenue(roller_df, snowflake_df, threshold=0.005):
     roller_df = roller_df.copy()
     snowflake_df = snowflake_df.copy()
 
@@ -569,11 +569,13 @@ def compare_revenue(roller_df, snowflake_df):
         snowflake_df,
         on=["DATE", "VENUE"],
         how="outer",
-    )
-    merged = merged.fillna(0)
-    merged["VARIANCE"] = merged["SNOWFLAKE_REVENUE"] - merged["ROLLER_REVENUE"]
-    merged["MATCH"] = merged["VARIANCE"].round(2).apply(
-        lambda value: "Match" if value == 0 else "Mismatch"
+    ).fillna(0)
+
+    merged["VARIANCE"] = (
+        abs(merged["SNOWFLAKE_REVENUE"] - merged["ROLLER_REVENUE"])
+    ).round(3)
+    merged["MATCH"] = merged["VARIANCE"].apply(
+        lambda value: "Match" if value <= threshold else "Mismatch"
     )
 
     return merged

@@ -1,8 +1,17 @@
-from config.config import SNOWFLAKE_CONFIG, REPORT_PATH
+from config.config import (
+    EXCLUDED_ROLLER_VENUES,
+    OPEN_REPORT_AFTER_RUN,
+    REPORT_PATH,
+    SNOWFLAKE_CONFIG,
+    TEAMS_INCLUDE_EXCEL_FILE,
+    TEAMS_WEBHOOK_URL,
+    TOTAL_REVENUE_VARIANCE_THRESHOLD,
+)
 from src.snowflake_loader import fetch_active_parks, load_snowflake_data, get_latest_snowflake_date
 from src.roller_downloader import download_dashboard
 from src.roller_csv_loader import load_roller_csv
 from src.revenue_compare import compare_revenue
+from src.notification import notify_if_revenue_discrepancy
 
 import os
 import time
@@ -16,6 +25,17 @@ conn_params = SNOWFLAKE_CONFIG
 
 print("Fetching parks from Snowflake...")
 parks_list = fetch_active_parks(conn_params)
+excluded_venues = set(EXCLUDED_ROLLER_VENUES)
+if excluded_venues:
+    original_park_count = len(parks_list)
+    parks_list = [
+        park
+        for park in parks_list
+        if " ".join(str(park).upper().split()) not in excluded_venues
+    ]
+    excluded_count = original_park_count - len(parks_list)
+    print(f"Excluded parks from comparison: {excluded_count}")
+    print("Excluded venue names:", ", ".join(sorted(excluded_venues)))
 
 print("Total parks:", len(parks_list))
 
@@ -81,5 +101,14 @@ with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
     match_summary.to_excel(writer, sheet_name="Match Summary", index=False)
 
 print("Report saved at:", output_file)
-if os.path.exists(output_file):
+
+notify_if_revenue_discrepancy(
+    result=result,
+    output_file=output_file,
+    webhook_url=TEAMS_WEBHOOK_URL,
+    threshold=TOTAL_REVENUE_VARIANCE_THRESHOLD,
+    include_excel_file=TEAMS_INCLUDE_EXCEL_FILE,
+)
+
+if OPEN_REPORT_AFTER_RUN and os.path.exists(output_file):
     os.startfile(output_file)
