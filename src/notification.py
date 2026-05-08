@@ -58,16 +58,22 @@ def notify_if_revenue_discrepancy(
     payload = _teams_payload(summary, output_file, include_excel_file=include_excel_file)
 
     try:
-        _post_teams_webhook(webhook_url, payload)
+        status, response_text = _post_teams_webhook(webhook_url, payload)
         if include_excel_file and payload.get("reportAttachment"):
             print("Teams discrepancy alert sent with Excel file payload.")
         else:
             print("Teams discrepancy alert sent.")
+        print(f"Teams webhook response status: {status}")
+        if response_text:
+            print(f"Teams webhook response: {response_text[:500]}")
     except RuntimeError:
         if include_excel_file and payload.get("reportAttachment"):
             print("Teams alert with Excel payload failed. Retrying message-only alert...")
-            _post_teams_webhook(webhook_url, _teams_payload(summary, output_file))
+            status, response_text = _post_teams_webhook(webhook_url, _teams_payload(summary, output_file))
             print("Teams discrepancy alert sent without Excel file payload.")
+            print(f"Teams webhook response status: {status}")
+            if response_text:
+                print(f"Teams webhook response: {response_text[:500]}")
         else:
             raise
 
@@ -110,6 +116,8 @@ def _post_teams_webhook(webhook_url, payload):
         with urllib.request.urlopen(request, timeout=30) as response:
             if response.status >= 400:
                 raise RuntimeError(f"Teams webhook returned HTTP {response.status}")
+            response_text = response.read().decode("utf-8", errors="replace").strip()
+            return response.status, response_text
     except urllib.error.URLError as exc:
         raise RuntimeError(f"Failed to send Teams notification: {exc}") from exc
 

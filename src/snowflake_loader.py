@@ -56,7 +56,7 @@ def load_snowflake_data(conn_params, dates, parks_list):
         raise ValueError("No valid Roller dates were provided to load_snowflake_data")
 
     date_expressions = ", ".join([f"TO_DATE('{d}')" for d in sorted(date_series)])
-
+    
     print("Fetching Snowflake data for dates:", sorted(date_series))
     print("Total parks passed:", len(parks_list))
 
