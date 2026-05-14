@@ -1,40 +1,56 @@
-# SkyZone Revenue Automation
+# SkyZone Revenue Automation - Roller Analytics approach
 
 Automates the daily revenue comparison between Roller and Snowflake.
 
 The pipeline downloads the `Revenue By Park By Day` report from Roller, loads the matching Snowflake revenue for the same date, compares both sources by venue, and writes an Excel report with match/mismatch results.
 
+# Business Purpose
+
+This automation helps validate that revenue loaded into Snowflake matches the source system (Roller).
+
+It is intended to:
+
+- Detect revenue discrepancies quickly
+- Reduce manual reconciliation effort
+- Provide a daily audit report
+- Support finance / data / operations teams
+
+
 ## What It Does
 
 1. Connects to Snowflake.
-2. Fetches the active O&O parks from `DIMLOCATION`.
-3. Opens Roller in Chrome with Selenium.
-4. Logs in and opens the `Revenue By Park By Day` dashboard.
-5. Refreshes the dashboard and downloads the report as CSV.
-6. Loads and normalizes the Roller CSV.
-7. Finds the latest available Snowflake revenue date.
-8. Compares Roller revenue against Snowflake revenue.
-9. Saves the comparison workbook to `data/output/revenue_comparison.xlsx`.
-10. Sends a Teams alert when total revenue variance is above the configured threshold.
-11. Includes the Excel workbook in the Teams webhook payload for workflows that create/post the file.
+2. Pulls active O&O parks from `DIMLOCATION`.
+3. Opens Roller in Chrome using Selenium.
+4. Navigates to the `Revenue By Park By Day` dashboard.
+5. Refreshes the dashboard data.
+6. Downloads the report as CSV.
+7. Loads and standardizes Roller revenue data.
+8. Detects the Roller business date.
+9. Pulls matching Snowflake revenue.
+10. Compares both sources by venue.
+11. Generates Excel report.
+12. Sends Teams alert when variance exceeds threshold (if enabled).
 
 ## Project Structure
 
 ```text
-SkyZone_Automation_Wasif/
+SkyZone_QA_Automation_RevAnalytics/
 |-- main.py                         # Full pipeline entry point
-|-- sz_rev_valid_full.py            # Optional single-file temp-workspace runner
-|-- README_FULL.md                  # Instructions for sz_rev_valid_full.py
+|-- README.md                       # Instructions for the project in detail
 |-- requirements.txt                # Python package requirements
 |-- rsa_key.p8                      # Snowflake private key, local secret
+
 |-- config/
 |   |-- config.py                   # Paths and Snowflake configuration
+
 |-- src/
 |   |-- roller_downloader.py        # Selenium Roller download workflow
 |   |-- roller_csv_loader.py        # Extracts and loads Roller CSV data
 |   |-- snowflake_client.py         # Snowflake connection helper
 |   |-- snowflake_loader.py         # Snowflake query functions
 |   |-- revenue_compare.py          # Revenue comparison logic
+|   |-- notification.py             # Notifucation/Webhook logic
+
 |-- data/
 |   |-- downloads/                  # Generated Roller downloads
 |   |-- input/                      # Optional input/reference files
@@ -83,6 +99,35 @@ $env:EXCLUDED_ROLLER_VENUES = "CLOUDBOUND NEW ROCHELLE NY"
 
 Note: a basic Teams incoming webhook can send the alert text, but it cannot natively upload a local Excel file into the chat. To post the workbook as a file, point `TEAMS_WEBHOOK_URL` at a Teams/Power Automate workflow that reads `reportAttachment.name`, `reportAttachment.contentType`, and `reportAttachment.contentBytes`, creates the `.xlsx` file, and posts it to the chat or channel.
 
+NOTE: Teams Notification (Currently Disabled)
+For Git / handover safety, webhook notifications are currently disabled.
+TEAMS_WEBHOOK_URL = ""
+
+This means:
+pipeline still runs
+report still generates
+no Teams message is sent
+How To Enable Teams Notifications Later
+
+Once audience / channel is confirmed, run PowerShell:
+
+[Environment]::SetEnvironmentVariable(
+    "TEAMS_WEBHOOK_URL",
+    "enter the url here",
+    "User"
+)
+
+Then:
+Close VS Code
+Re-open VS Code
+Re-run project
+
+Validate webhook loaded:
+python -c "from config.config import TEAMS_WEBHOOK_URL; print(bool(TEAMS_WEBHOOK_URL))"
+
+Expected result:
+True
+
 ## Running
 
 Run the full automation:
@@ -114,6 +159,21 @@ The default behavior is:
 - `ROLLER_RETRIES = 3`
 
 Each full retry starts a fresh Chrome browser session.
+
+# Roller Date Logic
+
+Currently the Roller dashboard is configured to:
+Yesterday
+
+This is the default production run logic.
+If running for another date:
+Dashboard filter must be manually changed in Roller before executing script.
+
+Examples:
+specific day
+prior month
+month-end validation
+custom date range
 
 ## Generated Files
 
@@ -151,3 +211,18 @@ python -m pip install --upgrade -r requirements.txt
 If Snowflake returns no data for the Roller date, `main.py` falls back to the latest Snowflake date when available.
 
 If Snowflake authentication succeeds but table access fails, confirm the configured role is correct. The current production role is `PROD_READER_FR`.
+
+# Expected Terminal Output
+
+Typical successful flow:
+
+Using Snowflake connection from config...
+Fetching parks from Snowflake...
+Opening Roller...
+Downloading report...
+Loading roller CSV...
+Fetching Snowflake revenue...
+Comparing...
+Report saved at:
+data/output/revenue_comparison.xlsx
+
