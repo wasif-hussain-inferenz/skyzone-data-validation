@@ -49,7 +49,7 @@ SkyZone_QA_Automation_RevAnalytics/
 |   |-- snowflake_client.py         # Snowflake connection helper
 |   |-- snowflake_loader.py         # Snowflake query functions
 |   |-- revenue_compare.py          # Revenue comparison logic
-|   |-- notification.py             # Notifucation/Webhook logic
+|   |-- notification.py             # Notification/Webhook logic
 
 |-- data/
 |   |-- downloads/                  # Generated Roller downloads
@@ -77,11 +77,19 @@ Update [config/config.py](config/config.py) before running in a new environment.
 Important settings:
 
 - `ROLLER_DOWNLOAD_PATH`: where Roller files are downloaded.
+- `ROLLER_LOGIN_URL`: Roller login page. Defaults to the production login URL.
+- `ROLLER_DASHBOARD_URL`: Roller analytics dashboard page.
+- `ROLLER_USERNAME` / `ROLLER_PASSWORD`: Roller credentials used by Selenium.
+- `ROLLER_REPORT_NAME`: dashboard tile name to open. Defaults to `Revenue By Park By Day`.
+- `ROLLER_RETRIES`: full browser workflow retry count. Defaults to `3`.
+- `ROLLER_DOWNLOAD_TIMEOUT`: download wait timeout in seconds. Defaults to `120`.
 - `REPORT_PATH`: where the Excel report is written.
+- `REPORT_FILE_NAME`: Excel workbook name. Defaults to `revenue_comparison.xlsx`.
 - `TEAMS_WEBHOOK_URL`: Teams incoming webhook or workflow URL used for discrepancy alerts.
 - `TEAMS_INCLUDE_EXCEL_FILE`: whether to include the workbook as base64 file content in the Teams payload. Defaults to `true`.
 - `TOTAL_REVENUE_VARIANCE_THRESHOLD`: dollar tolerance for total revenue variance before alerting. Defaults to `0.01`.
-- `OPEN_REPORT_AFTER_RUN`: whether to open the workbook on this machine after the run. Defaults to `false`.
+- `ROW_REVENUE_VARIANCE_THRESHOLD`: row-level dollar tolerance used for Match/Mismatch. Defaults to `0.005`.
+- `OPEN_REPORT_AFTER_RUN`: whether to open the workbook on this machine after the run. Defaults to `true`.
 - `EXCLUDED_ROLLER_VENUES`: comma-separated venue names to remove from the comparison. Defaults to `CLOUDBOUND NEW ROCHELLE NY`.
 - `SNOWFLAKE_CONFIG`: Snowflake user, account, warehouse, role, database, schema, private key path, and private key passphrase.
 
@@ -93,7 +101,8 @@ Teams alert settings are read from environment variables so secrets do not need 
 $env:TEAMS_WEBHOOK_URL = "https://..."
 $env:TEAMS_INCLUDE_EXCEL_FILE = "true"
 $env:TOTAL_REVENUE_VARIANCE_THRESHOLD = "0.01"
-$env:OPEN_REPORT_AFTER_RUN = "false"
+$env:ROW_REVENUE_VARIANCE_THRESHOLD = "0.005"
+$env:OPEN_REPORT_AFTER_RUN = "true"
 $env:EXCLUDED_ROLLER_VENUES = "CLOUDBOUND NEW ROCHELLE NY"
 ```
 
@@ -104,9 +113,12 @@ For Git / handover safety, webhook notifications are currently disabled.
 TEAMS_WEBHOOK_URL = ""
 
 This means:
-pipeline still runs
-report still generates
-no Teams message is sent
+
+- pipeline still runs
+- report still generates
+- the Excel report opens locally after the run, unless `OPEN_REPORT_AFTER_RUN=false`
+- no Teams message is sent
+
 How To Enable Teams Notifications Later
 
 Once audience / channel is confirmed, run PowerShell:
@@ -140,8 +152,13 @@ Expected output:
 
 - Roller download file in `data/downloads/`
 - Final report at `data/output/revenue_comparison.xlsx`
+- Excel workbook opens automatically after the run when `OPEN_REPORT_AFTER_RUN=true`
 
-By default, `main.py` does not open the workbook locally. Set `OPEN_REPORT_AFTER_RUN=true` if you want the old auto-open behavior.
+To stop the workbook from opening locally after a run:
+
+```powershell
+$env:OPEN_REPORT_AFTER_RUN = "false"
+```
 
 ## Roller Download Reliability
 
@@ -157,6 +174,8 @@ The default behavior is:
 - `PAGE_LOAD_TIMEOUT = 60`
 - `SCRIPT_TIMEOUT = 30`
 - `ROLLER_RETRIES = 3`
+- `ROLLER_DOWNLOAD_TIMEOUT = 120`
+- `CSV_LOAD_RETRIES = 5`
 
 Each full retry starts a fresh Chrome browser session.
 
@@ -197,6 +216,13 @@ config/__pycache__/
 - `src/roller_downloader.py`: downloads the Roller dashboard export.
 - `src/roller_csv_loader.py`: extracts ZIP downloads when needed and standardizes Roller columns.
 - `src/revenue_compare.py`: merges Roller and Snowflake data and calculates variance.
+- `src/notification.py`: builds and sends Teams discrepancy alerts when a webhook URL is configured.
+
+## Handover Notes
+
+The pipeline is intentionally parameterized through environment variables first, with compatible defaults in [config/config.py](config/config.py). For handover, prefer changing environment variables instead of editing Python files for credentials, URLs, timeouts, thresholds, excluded venues, and output behavior.
+
+`main.py` is import-safe and exposes `run_pipeline()` for future scheduling or orchestration work. Running `python main.py` still executes the same full process.
 
 ## Troubleshooting
 
@@ -225,4 +251,3 @@ Fetching Snowflake revenue...
 Comparing...
 Report saved at:
 data/output/revenue_comparison.xlsx
-
